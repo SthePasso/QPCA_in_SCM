@@ -39,8 +39,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 #from qiskit.utils import algorithm_globals
-from qiskit.circuit.library import PauliFeatureMap, ZZFeatureMap
-from qiskit_algorithms.state_fidelities import ComputeUncompute
+from qiskit.circuit.library import PauliFeatureMap, ZZFeatureMap, RealAmplitudes
+#from qiskit_algorithms.state_fidelities import ComputeUncompute
 from qiskit_machine_learning.kernels import FidelityQuantumKernel
 
 from qiskit_ibm_runtime import QiskitRuntimeService
@@ -49,14 +49,13 @@ from qiskit.circuit import QuantumCircuit
 from qiskit import transpile
 from qiskit.circuit.library import RealAmplitudes
 from qiskit_algorithms.optimizers import COBYLA
-from qiskit.primitives import BaseSampler
+#from qiskit.primitives import BaseSampler
 #from qiskit.primitives import Sampler
 #from qiskit_ibm_runtime import QiskitRuntimeService, Sampler, SamplerV2
 from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2 as Sampler
 
 from sklearn.pipeline import make_pipeline
-from qiskit_machine_learning.state_fidelities import ComputeUncompute
-from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
+#from qiskit_machine_learning.state_fidelities import ComputeUncompute
 from qiskit_machine_learning.kernels import FidelityQuantumKernel
 from qiskit import transpile
 from sklearn.svm import SVC
