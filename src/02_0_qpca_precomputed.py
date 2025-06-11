@@ -145,6 +145,226 @@ df_clean = df.dropna(axis=1)
 y = df_clean[target]
 X = df_clean.drop(columns=[target])
 
+class ClaMPDataset_(): # 4 features -> most corelated atributs
+  def __init__(self, target, cut = 0):
+    self.target = target
+    self.X, self.y, self.correlation_matrix = self.read_csv(cut)
+    self.list_atributs = self.list_atributs_corralation()
+
+  def list_atributs_corralation(self):
+    # Unstack the correlation matrix to get pair-wise correlations as a series
+    correlation_series = self.correlation_matrix.unstack()
+    # Convert the series to a DataFrame for better manipulation
+    correlation_df = pd.DataFrame(correlation_series, columns=['correlation']).reset_index()
+    # Rename the columns for clarity
+    correlation_df.columns = ['attribute_1', 'attribute_2', 'correlation']
+    # Filter out self-correlations (where correlation == 1)
+    correlation_df = correlation_df[correlation_df['attribute_1'] != correlation_df['attribute_2']]
+    # Sort the correlation values from highest to lowest
+    sorted_correlation_df = correlation_df.sort_values(by='correlation', ascending=False)
+    # List to store the final results without repeated attributes
+    top_correlations = []
+    list_atributs = []
+    used_attributes = set()
+    for _, row in sorted_correlation_df.iterrows():
+        if len(top_correlations) >= 8:
+            break
+        attr1, attr2, corr_value = row['attribute_1'], row['attribute_2'], row['correlation']
+        if attr1 not in used_attributes and attr2 not in used_attributes:
+            top_correlations.append((attr1, attr2, corr_value))
+            list_atributs.append(attr1)
+            list_atributs.append(attr2)
+            used_attributes.add(attr1)
+            used_attributes.add(attr2)
+    return list_atributs
+
+  def read_csv(self, cut):
+    # Define the dataset path
+    #dataset_path = "/Users/sthefaniepasso/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
+    #dataset_path = "/home/prevost/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
+    dataset_path = "/home/ats852/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
+
+    # List files in the directory to find the CSV file
+    files = os.listdir(dataset_path)
+    csv_files = [f for f in files if f.endswith('.csv')]
+
+    # Load the first CSV file (assuming there's only one)
+    if csv_files:
+        df = pd.read_csv(os.path.join(dataset_path, csv_files[0]))
+        #print("CSV found and send to df")  # Display first few rows
+    else:
+        print("No CSV file found in the dataset directory.")
+    #df.dropna(axis=1, inplace=True)
+    df = df.dropna(axis=1)
+    df = self.create_cut(df, cut)
+    y = df[self.target]
+    X = df.drop(columns=[self.target])
+    correlation_matrix = X.corr()
+    return X,y,correlation_matrix
+
+  def create_cut(self, df, cut=0):
+    if cut == 0:
+        return df
+
+    # Select the rows where Class is 0 and 1
+    class_0 = df[df[self.target] == 0]
+    class_1 = df[df[self.target] == 1]
+    
+    # Select based on the condition of cut % 2 == 0 or cut % 2 == 1
+    if cut % 2 == 0:
+      df_n = pd.concat([class_0[:cut//2], class_1[:cut//2]])
+    else:
+      df_n = pd.concat([class_0[:(cut//2)+1], class_1[:cut//2]])
+    return df_n
+
+  def plot_correlation_matrix(self):
+    # Plot the correlation matrix using seaborn
+    plt.figure(figsize=(15, 8))
+    sns.heatmap(self.correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+    plt.title('Correlation Matrix')
+    plt.show()
+
+  def stratified_ordered_split(self, X_dim, test_size=0.2):
+    # Ensure index alignment
+    X_class_0 = X_dim.loc[self.y[self.y == 0].index]
+    X_class_1 = X_dim.loc[self.y[self.y == 1].index]
+    y_class_0 = self.y[self.y == 0]
+    y_class_1 = self.y[self.y == 1]
+
+    # Split each class separately
+    X_train_0, X_test_0, y_train_0, y_test_0 = train_test_split(
+        X_class_0, y_class_0, test_size=test_size, shuffle=False
+    )
+    X_train_1, X_test_1, y_train_1, y_test_1 = train_test_split(
+        X_class_1, y_class_1, test_size=test_size, shuffle=False
+    )
+
+    # Concatenate to maintain order
+    X_train = np.vstack((X_train_0, X_train_1))
+    X_test = np.vstack((X_test_0, X_test_1))
+    y_train = np.hstack((y_train_0, y_train_1))
+    y_test = np.hstack((y_test_0, y_test_1))
+
+    return X_train, X_test, y_train, y_test
+
+  def dataset(self, dimension):
+    list_atributs = self.list_atributs
+    X_dim = self.X[list_atributs[:dimension]]
+    X_train, X_test, y_train, y_test = self.stratified_ordered_split(X_dim, test_size=0.2)
+    #X_train, X_test, y_train, y_test = self.stratified_ordered_split(X_dim, self.y, test_size=0.2)
+    #print(X_train.shape, y_train.shape, X_test.shape, y_test.shape)
+    return X_train, X_test, y_train, y_test
+
+class ClaMPDatasetGPT_(): # 4 features -> most and least correlated atributs
+    def __init__(self, target, cut=0):
+        self.target = target
+        self.X, self.y, self.correlation_matrix = self.read_csv(cut)
+        self.list_atributs = self.list_atributs_correlation()
+
+    def list_atributs_correlation(self):
+        # Calculate the correlation of each feature with the target variable
+        target_correlation = self.X.corrwith(self.y).abs()
+        
+        # Sort the features based on their absolute correlation with the target
+        sorted_correlation = target_correlation.sort_values(ascending=False)
+        
+        # Select the top n features with the highest correlation
+        top_n = 15  # You can adjust this number as needed
+        top_correlated = sorted_correlation.head(top_n).index.tolist()
+        
+        # Select the top n features with the lowest correlation
+        bottom_correlated = sorted_correlation.tail(top_n).index.tolist()
+        
+        # Combine the lists
+        list_atributs = top_correlated + bottom_correlated
+        
+        return list_atributs
+
+    def read_csv(self, cut):
+        # Define the dataset path
+        #dataset_path = "/Users/sthefaniepasso/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
+        #dataset_path = "/home/prevost/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
+        dataset_path = "/home/ats852/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
+
+        # List files in the directory to find the CSV file
+        files = os.listdir(dataset_path)
+        csv_files = [f for f in files if f.endswith('.csv')]
+
+        # Load the first CSV file (assuming there's only one)
+        if csv_files:
+            df = pd.read_csv(os.path.join(dataset_path, csv_files[0]))
+            #print("CSV found and send to df")  # Display first few rows
+        else:
+            print("No CSV file found in the dataset directory.")
+        
+        # Drop columns with NaN values
+        df = df.dropna(axis=1)
+        # Apply the cut if specified
+        df = self.create_cut(df, cut)
+        
+        # Separate features and target
+        y = df[self.target]
+        X = df.drop(columns=[self.target])
+        
+        # Calculate the correlation matrix
+        correlation_matrix = X.corr()
+        
+        return X, y, correlation_matrix
+
+    def create_cut(self, df, cut=0):
+        if cut == 0:
+            return df
+
+        # Select the rows where Class is 0 and 1
+        class_0 = df[df[self.target] == 0]
+        class_1 = df[df[self.target] == 1]
+        
+        # Select based on the condition of cut % 2 == 0 or cut % 2 == 1
+        if cut % 2 == 0:
+            df_n = pd.concat([class_0[:cut//2], class_1[:cut//2]])
+        else:
+            df_n = pd.concat([class_0[:(cut//2)+1], class_1[:cut//2]])
+
+        return df_n
+
+    def plot_correlation_matrix(self):
+        # Plot the correlation matrix using seaborn
+        plt.figure(figsize=(15, 8))
+        sns.heatmap(self.correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        plt.title('Correlation Matrix')
+        plt.show()
+
+    def stratified_ordered_split(self, X_dim, test_size=0.2):
+        # Ensure index alignment
+        X_class_0 = X_dim.loc[self.y[self.y == 0].index]
+        X_class_1 = X_dim.loc[self.y[self.y == 1].index]
+        y_class_0 = self.y[self.y == 0]
+        y_class_1 = self.y[self.y == 1]
+
+        # Split each class separately
+        X_train_0, X_test_0, y_train_0, y_test_0 = train_test_split(
+            X_class_0, y_class_0, test_size=test_size, shuffle=False
+        )
+        X_train_1, X_test_1, y_train_1, y_test_1 = train_test_split(
+            X_class_1, y_class_1, test_size=test_size, shuffle=False
+        )
+
+        # Concatenate to maintain order
+        X_train = np.vstack((X_train_0, X_train_1))
+        X_test = np.vstack((X_test_0, X_test_1))
+        y_train = np.hstack((y_train_0, y_train_1))
+        y_test = np.hstack((y_test_0, y_test_1))
+
+        return X_train, X_test, y_train, y_test
+
+    def dataset(self, dimension):
+        list_atributs = self.list_atributs
+        X_dim = self.X[list_atributs[:dimension]]
+        X_train, X_test, y_train, y_test = self.stratified_ordered_split(X_dim, test_size=0.2)
+        #X_train, X_test, y_train, y_test = self.stratified_ordered_split(X_dim, self.y, test_size=0.2)
+        #print(X_train.shape, y_train.shape, X_test.shape, y_test.shape)
+        return X_train, X_test, y_train, y_test
+
 
 class ClaMPDataset(): # 4 features -> most corelated atributs
   def __init__(self, target, cut = 0):
