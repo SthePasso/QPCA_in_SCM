@@ -591,9 +591,8 @@ def should_skip_execution(results_file, samples, start_at):
     if os.path.exists(results_file):
         df_existing = pd.read_csv(results_file)
         # If there are existing records with the same sample count and dimensions greater than or equal to start_at, return True
-        if ((df_existing["Samples"] == samples) & (df_existing["Dimension"] == start_at)).any():
+        if ((df_existing["Samples"] == samples) & (df_existing["Dimension"] >= start_at)).any():
             return True
-        print(samples, start_at)
     return False
 """# Classical PCA Model"""
 
@@ -662,15 +661,15 @@ def classical_PCA_precomputed_qkernel(X_train, y_train, X_test, y_test, dimensio
 def main_qpca_q_correlation(dataset=0, samples=500, start_at=0, end_at=11):
     if dataset == 1:        
         results_file = "quantum_pca_q_10_10.csv"
-        print("stop1")
         if should_skip_execution(results_file, samples, end_at):
             return True
         malware = ClaMPDataset_(target='class', cut=samples)
     elif dataset == 0:
         results_file = "quantum_pca_q_10_0.csv"
-        print("stop1")
         if should_skip_execution(results_file, samples, end_at):
+            print("stop1")
             return True
+        print("stop2")
         malware = ClaMPDatasetGPT_(target='class', cut=samples)
     else:
         return True
