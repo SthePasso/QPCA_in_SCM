@@ -587,13 +587,76 @@ def metrics_of_evaluation_classicaly(svc,dimension,end,start,test_features, test
   })
   return df_results
 
-def should_skip_execution(results_file, samples, start_at):
+# def should_skip_execution(results_file, samples, start_at):
+#     if os.path.exists(results_file):
+#         df_existing = pd.read_csv(results_file)
+#         # If there are existing records with the same sample count and dimensions greater than or equal to start_at, return True
+#         if ((df_existing["Samples"] == samples) & (df_existing["Dimension"] >= start_at)).any():
+#             return True
+#     return False
+def should_skip_execution(results_file, samples, dimension):
+    """
+    Check if a specific dimension has already been computed for the given sample size.
+    
+    Args:
+        results_file (str): Path to the CSV results file
+        samples (int): Number of samples
+        dimension (int): Specific dimension to check
+    
+    Returns:
+        bool: True if this specific dimension already exists for the sample size
+    """
     if os.path.exists(results_file):
-        df_existing = pd.read_csv(results_file)
-        # If there are existing records with the same sample count and dimensions greater than or equal to start_at, return True
-        if ((df_existing["Samples"] == samples) & (df_existing["Dimension"] >= start_at)).any():
-            return True
+        try:
+            df_existing = pd.read_csv(results_file)
+            
+            # Convert columns to appropriate data types to avoid comparison errors
+            df_existing["Samples"] = pd.to_numeric(df_existing["Samples"], errors='coerce')
+            df_existing["Dimension"] = pd.to_numeric(df_existing["Dimension"], errors='coerce')
+            
+            # Check if there are existing records with the same sample count AND the specific dimension
+            if ((df_existing["Samples"] == samples) & (df_existing["Dimension"] == dimension)).any():
+                return True
+        except Exception as e:
+            print(f"Error reading {results_file}: {e}")
+            return False
     return False
+
+def get_next_dimension_to_start(results_file, samples, default_start=2):
+    """
+    Get the next dimension to start from based on what's already completed.
+    
+    Args:
+        results_file (str): Path to the CSV results file
+        samples (int): Number of samples
+        default_start (int): Default starting dimension if no records exist
+    
+    Returns:
+        int: Next dimension to start from
+    """
+    if not os.path.exists(results_file):
+        return default_start
+    
+    try:
+        df_existing = pd.read_csv(results_file)
+        
+        # Convert columns to appropriate data types
+        df_existing["Samples"] = pd.to_numeric(df_existing["Samples"], errors='coerce')
+        df_existing["Dimension"] = pd.to_numeric(df_existing["Dimension"], errors='coerce')
+        
+        sample_data = df_existing[df_existing["Samples"] == samples]
+        
+        if sample_data.empty:
+            return default_start
+        
+        # Get the maximum dimension already completed
+        max_dimension = sample_data["Dimension"].max()
+        return int(max_dimension + 1)
+        
+    except Exception as e:
+        print(f"Error reading {results_file}: {e}")
+        return default_start
+
 """# Classical PCA Model"""
 
 def classical_pca(X_train, y_train, X_test, y_test, n_clusters=3):
@@ -665,6 +728,7 @@ def main_qpca_q_correlation(dataset=0, samples=500, start_at=0, end_at=11):
             return True
         malware = ClaMPDataset_(target='class', cut=samples)
     elif dataset == 0:
+        print("stop0")
         results_file = "quantum_pca_q_10_0.csv"
         if should_skip_execution(results_file, samples, end_at):
             print("stop1")
