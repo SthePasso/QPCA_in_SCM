@@ -728,12 +728,9 @@ def main_qpca_q_correlation(dataset=0, samples=500, start_at=0, end_at=11):
             return True
         malware = ClaMPDataset_(target='class', cut=samples)
     elif dataset == 0:
-        print("stop0")
         results_file = "quantum_pca_q_10_0.csv"
         if should_skip_execution(results_file, samples, end_at):
-            print("stop1")
             return True
-        print("stop2")
         malware = ClaMPDatasetGPT_(target='class', cut=samples)
     else:
         return True
@@ -744,9 +741,7 @@ def main_qpca_q_correlation(dataset=0, samples=500, start_at=0, end_at=11):
     file_exists = os.path.exists(results_file)
 
     for dimension in range(start_at, end_at):
-        print("stop2")
         if should_skip_execution(results_file, samples, dimension) == False:
-            print("stop3")
             X_train, X_test, y_train, y_test = malware.dataset(dimension)
             print("Shape: ", X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
