@@ -185,8 +185,6 @@ class ClaMPDataset_(): # 4 features -> most corelated atributs
 
   def read_csv(self, cut):
     # Define the dataset path
-    #dataset_path = "/Users/sthefaniepasso/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
-    #dataset_path = "/home/prevost/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
     dataset_path = "/home/ats852/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
 
     # List files in the directory to find the CSV file
@@ -196,17 +194,26 @@ class ClaMPDataset_(): # 4 features -> most corelated atributs
     # Load the first CSV file (assuming there's only one)
     if csv_files:
         df = pd.read_csv(os.path.join(dataset_path, csv_files[0]))
-        #print("CSV found and send to df")  # Display first few rows
     else:
         print("No CSV file found in the dataset directory.")
-    #df.dropna(axis=1, inplace=True)
+    
+    # Drop columns with NaN values
     df = df.dropna(axis=1)
+    # Apply the cut if specified
     df = self.create_cut(df, cut)
+    
+    # Separate features and target
     y = df[self.target]
     X = df.drop(columns=[self.target])
+    
+    # **ADD THIS LINE - Convert to numeric, replacing non-numeric values with NaN**
+    X = X.apply(pd.to_numeric, errors='coerce')
+    
+    # Calculate the correlation matrix
     correlation_matrix = X.corr()
-    return X,y,correlation_matrix
-
+    
+    return X, y, correlation_matrix
+    
   def create_cut(self, df, cut=0):
     if cut == 0:
         return df
@@ -287,8 +294,6 @@ class ClaMPDatasetGPT_(): # 4 features -> most and least correlated atributs
 
     def read_csv(self, cut):
         # Define the dataset path
-        #dataset_path = "/Users/sthefaniepasso/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
-        #dataset_path = "/home/prevost/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
         dataset_path = "/home/ats852/.cache/kagglehub/datasets/saurabhshahane/classification-of-malwares/versions/1"
 
         # List files in the directory to find the CSV file
@@ -298,7 +303,6 @@ class ClaMPDatasetGPT_(): # 4 features -> most and least correlated atributs
         # Load the first CSV file (assuming there's only one)
         if csv_files:
             df = pd.read_csv(os.path.join(dataset_path, csv_files[0]))
-            #print("CSV found and send to df")  # Display first few rows
         else:
             print("No CSV file found in the dataset directory.")
         
@@ -310,6 +314,9 @@ class ClaMPDatasetGPT_(): # 4 features -> most and least correlated atributs
         # Separate features and target
         y = df[self.target]
         X = df.drop(columns=[self.target])
+        
+        # **ADD THIS LINE - Convert to numeric, replacing non-numeric values with NaN**
+        X = X.apply(pd.to_numeric, errors='coerce')
         
         # Calculate the correlation matrix
         correlation_matrix = X.corr()
