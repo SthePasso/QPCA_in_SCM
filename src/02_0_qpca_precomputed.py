@@ -591,11 +591,11 @@ def should_skip_execution(results_file, samples, start_at):
     if os.path.exists(results_file):
         df_existing = pd.read_csv(results_file)
         # If there are existing records with the same sample count and dimensions greater than or equal to start_at, return True
+        print(samples, start_at)
         if ((df_existing["Samples"] == samples) & (df_existing["Dimension"] >= start_at)).any():
             return True
     
     return False
-
 """# Classical PCA Model"""
 
 def classical_pca(X_train, y_train, X_test, y_test, n_clusters=3):
