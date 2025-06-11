@@ -30,11 +30,6 @@ import time
 import requests
 import seaborn as sns
 
-import pandas as pd
-import os
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 #Importing Libraries
 from sklearn.svm import SVC
 
@@ -44,8 +39,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 #from qiskit.utils import algorithm_globals
-from qiskit.circuit.library import PauliFeatureMap, ZZFeatureMap, RealAmplitudes
-#from qiskit_algorithms.state_fidelities import ComputeUncompute
+from qiskit.circuit.library import PauliFeatureMap, ZZFeatureMap
+from qiskit_algorithms.state_fidelities import ComputeUncompute
 from qiskit_machine_learning.kernels import FidelityQuantumKernel
 
 from qiskit_ibm_runtime import QiskitRuntimeService
@@ -54,13 +49,14 @@ from qiskit.circuit import QuantumCircuit
 from qiskit import transpile
 from qiskit.circuit.library import RealAmplitudes
 from qiskit_algorithms.optimizers import COBYLA
-#from qiskit.primitives import BaseSampler
+from qiskit.primitives import BaseSampler
 #from qiskit.primitives import Sampler
 #from qiskit_ibm_runtime import QiskitRuntimeService, Sampler, SamplerV2
 from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2 as Sampler
 
 from sklearn.pipeline import make_pipeline
-#from qiskit_machine_learning.state_fidelities import ComputeUncompute
+from qiskit_machine_learning.state_fidelities import ComputeUncompute
+from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
 from qiskit_machine_learning.kernels import FidelityQuantumKernel
 from qiskit import transpile
 from sklearn.svm import SVC
@@ -150,6 +146,12 @@ df_clean = df.dropna(axis=1)
 y = df_clean[target]
 X = df_clean.drop(columns=[target])
 
+import pandas as pd
+import os
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
 class ClaMPDataset_(): # 4 features -> most corelated atributs
   def __init__(self, target, cut = 0):
     self.target = target
@@ -213,7 +215,7 @@ class ClaMPDataset_(): # 4 features -> most corelated atributs
     correlation_matrix = X.corr()
     
     return X, y, correlation_matrix
-
+    
   def create_cut(self, df, cut=0):
     if cut == 0:
         return df
