@@ -30,6 +30,11 @@ import time
 import requests
 import seaborn as sns
 
+import pandas as pd
+import os
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 #Importing Libraries
 from sklearn.svm import SVC
 
@@ -474,12 +479,6 @@ class ClaMPDataset(): # 4 features -> most corelated atributs
     X_dim = self.X[list_atributs[:dimension]]
     X_train, X_test, y_train, y_test = self.stratified_ordered_split(X_dim, test_size=0.2)
     return X_train, X_test, y_train, y_test
-
-import pandas as pd
-import os
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 
 class ClaMPDatasetGPT(): # 4 features -> most and least correlated atributs
     def __init__(self, target, cut=0):
