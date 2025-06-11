@@ -636,32 +636,22 @@ def main_cpca_correlation(dataset=0, samples=500, start_at=2, end_at=20):
 
 from sklearn.pipeline import make_pipeline
 
-def classical_PCA_precomputed_qkernel(name, X_train, y_train, X_test, y_test, dimension, service, n_clusters=2):
-    # # Hrdware setup
-    backend = service.backend(name)
-    # sampler = Sampler(backend)
-    
+def classical_PCA_precomputed_qkernel(X_train, y_train, X_test, y_test, dimension):
     feature_map = ZZFeatureMap(feature_dimension=dimension, reps=2)
     quantum_kernel = FidelityQuantumKernel(feature_map=feature_map)
-
     # Compute kernel matrix
     kernel_matrix_train = quantum_kernel.evaluate(x_vec=X_train)
     kernel_matrix_test = quantum_kernel.evaluate(x_vec=X_test)
-
-    # # Perform clustering
-    # clustering = SpectralClustering(n_clusters=n_clusters, affinity='precomputed', assign_labels='kmeans')
-    # predicted_labels = clustering.fit_predict(kernel_matrix)
-
     # return predicted_labels, backend
     kernelpca_q = KernelPCA(n_components=2, kernel='precomputed')
     train_features_q = kernelpca_q.fit_transform(kernel_matrix_train)
     test_features_q = kernelpca_q.fit_transform(kernel_matrix_test) 
     LR = LogisticRegression()
     LR.fit(train_features_q, y_train)
-    return LR, backend, train_features_q, test_features_q
+    return LR, train_features_q, test_features_q
 
 
-def main_qpca_q_correlation(computers='all', dataset=0, samples=500, start_at=0, end_at=20):
+def main_qpca_q_correlation(dataset=0, samples=500, start_at=0, end_at=11):
     if dataset == 1:        
         results_file = "quantum_pca_q_10_10.csv"
         if should_skip_execution(results_file, samples, end_at):
@@ -675,12 +665,6 @@ def main_qpca_q_correlation(computers='all', dataset=0, samples=500, start_at=0,
     else:
         return True
 
-    if computers != 'all':
-        _, service = backends()
-        q_hardwares = [computers]
-    else:
-        q_hardwares, service = backends()
-
     print("QSVM with high correlation features:")
     
     # **Check if the CSV already exists**
@@ -691,27 +675,18 @@ def main_qpca_q_correlation(computers='all', dataset=0, samples=500, start_at=0,
             X_train, X_test, y_train, y_test = malware.dataset(dimension)
             print("Shape: ", X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
-            for q_hardware in q_hardwares:
-                start = time.time()
-                model, backend, X_train, X_test = classical_PCA_precomputed_qkernel(q_hardware, X_train, y_train, X_test, y_test, dimension, service)
+            start = time.time()
+            model, X_train, X_test = classical_PCA_precomputed_qkernel(X_train, y_train, X_test, y_test, dimension)
 
-                df_model = metrics_of_evaluation(q_hardware, dimension, model, time.time(), start, X_train, y_train, backend)
-                df_model["Samples"] = samples  # Add sample size info
-                # **Append new results while keeping existing content**
-                df_model.to_csv(results_file, mode='a', index=False, header=not file_exists)
-
-                # **Ensure the header is written only once**
-                file_exists = True  
-
+            df_model = metrics_of_evaluation_classicaly(model,dimension,time.time(),start,X_train, y_train)
+            df_model["Samples"] = samples  # Add sample size info
+            df_model.to_csv(results_file, mode='a', index=False, header=not file_exists)
+            file_exists = True  
     return True
 
 """ # Classical PCA rbf + Quantum Kernel"""
 
-def classical_PCA_rbf_qkernel(name, X_train, y_train, X_test, y_test, dimension, service, n_clusters=2):
-    # # Hrdware setup
-    backend = service.backend(name)
-    # sampler = Sampler(backend)
-    
+def classical_PCA_rbf_qkernel(X_train, y_train, X_test, y_test, dimension):
     feature_map = ZZFeatureMap(feature_dimension=dimension, reps=2)
     quantum_kernel = FidelityQuantumKernel(feature_map=feature_map)
 
@@ -724,9 +699,9 @@ def classical_PCA_rbf_qkernel(name, X_train, y_train, X_test, y_test, dimension,
     test_features_q = kernelpca_q.fit_transform(kernel_matrix_test) 
     LR = LogisticRegression()
     LR.fit(train_features_q, y_train)
-    return LR, backend, train_features_q, test_features_q
+    return LR, train_features_q, test_features_q
 
-def main_qpca_rbf_correlation(computers='all', dataset=0, samples=500, start_at=0, end_at=20):
+def main_qpca_rbf_correlation(dataset=0, samples=500, start_at=0, end_at=11):
     if dataset == 1:        
         results_file = "quantum_pca_rbf_q_10_10.csv"
         if should_skip_execution(results_file, samples, end_at):
@@ -740,12 +715,6 @@ def main_qpca_rbf_correlation(computers='all', dataset=0, samples=500, start_at=
     else:
         return True
 
-    if computers != 'all':
-        _, service = backends()
-        q_hardwares = [computers]
-    else:
-        q_hardwares, service = backends()
-
     print("QSVM with high correlation features:")
     
     # **Check if the CSV already exists**
@@ -756,17 +725,14 @@ def main_qpca_rbf_correlation(computers='all', dataset=0, samples=500, start_at=
             X_train, X_test, y_train, y_test = malware.dataset(dimension)
             print("Shape: ", X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
-            for q_hardware in q_hardwares:
-                start = time.time()
-                model, backend, X_train, X_test = classical_PCA_rbf_qkernel(q_hardware, X_train, y_train, X_test, y_test, dimension, service)
-
-                df_model = metrics_of_evaluation(q_hardware, dimension, model, time.time(), start, X_train, y_train, backend)
-                df_model["Samples"] = samples  # Add sample size info
-                # **Append new results while keeping existing content**
-                df_model.to_csv(results_file, mode='a', index=False, header=not file_exists)
-
-                # **Ensure the header is written only once**
-                file_exists = True  
+            start = time.time()
+            model, X_train, X_test = classical_PCA_rbf_qkernel(X_train, y_train, X_test, y_test, dimension)
+            df_model = metrics_of_evaluation_classicaly(model,dimension,time.time(),start,X_train, y_train)
+            df_model["Samples"] = samples  # Add sample size info
+            # **Append new results while keeping existing content**
+            df_model.to_csv(results_file, mode='a', index=False, header=not file_exists)
+            # **Ensure the header is written only once**
+            file_exists = True  
 
     return True
 
@@ -789,7 +755,7 @@ samples = int((TOTAL_SAMPLES * 1) / 10)
 i = 0
 for j in range(1, 11): # Size of dataset: 10%, 20%, ..., 100%
     samples = int((TOTAL_SAMPLES * j) / 10)   
-    df_result_svc0 = main_qpca_q_correlation(i, samples = samples, start_at=2, end_at=20) #"ibm_brisbane", start_at=2, end_at=20)
+    df_result_svc0 = main_qpca_q_correlation(dataset=i, samples = samples, start_at=2, end_at=11)
 print("**********************************************")
     
 """### Classical PCA rbf + Quantum Kernel"""
